@@ -1,9 +1,8 @@
 
 cat("\014")    # to clear console to CTRL+L
 rm(list=ls())  
-setwd("C:/Users/Anmole/Documents/GitHub/Project1/IMI/BA")
 
-data=read.csv("CSVs/pharma108.csv")
+data=read.csv("Dataset/pharma108.csv")
 
 df=data
 
