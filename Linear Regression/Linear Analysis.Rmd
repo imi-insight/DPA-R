@@ -106,3 +106,208 @@ df = subset(df, select = -c(WorkMethodsFrequencySelect1,WorkMethodsFrequencySele
 df = subset(df, select = -c(WorkMethodsFrequencyLiftAnalysis,WorkMethodsFrequencyHMMs,WorkMethodsFrequencyGANs) )
 summary(df)
 ```
+
+# Salary Calculation
+```{r}
+
+df2=read.csv("https://raw.githubusercontent.com/imi-insight/InSession/master/Linear%20Regression/Datasets/conversionRates.csv")
+names(df2)
+colnames(df2)[colnames(df2)=="originCountry"] <- "CompensationCurrency" 			# Renaming the columns
+df2=df2[,-1]
+df<-merge(x=df,y=df2,by="CompensationCurrency")
+names(df)
+```
+
+```{r}
+
+options(scipen=9999999)
+df$CompensationAmount <- as.numeric(gsub(",","",df$CompensationAmount))
+df$Salary=df$CompensationAmount*df$exchangeRate
+
+write.csv(df,file="useful.csv")
+
+df=read_csv(url("https://raw.githubusercontent.com/imi-insight/InSession/master/Linear%20Regression/Datasets/useful.csv"))
+
+View(summary(df))
+```
+
+```{r}
+
+#Outlier detection--------
+findoutliers <- function(col_name)
+{
+  nmiss <- sum(is.na(col_name))   #no. of missing values in dataset
+  clean_col <- col_name[!is.na(col_name)]         # all non missing values will be assigned to a
+  m <- mean(clean_col)
+  n <- length(clean_col)
+  s <- sd(clean_col)
+  min <- min(clean_col)
+  p1 <- quantile(clean_col,0.01)
+  p99 <- quantile(clean_col,0.99)
+  p2 <- quantile(clean_col,0.02)
+  p98 <- quantile(clean_col,0.98)
+  max <- max(clean_col)
+  UC <- m+3*s
+  LC <- m-3*s
+  outlier_flag <- max>UC | min<LC
+  return(c(n=n, nmiss=nmiss,
+           outlier_flag=outlier_flag,
+           mean=m,stdev=s, min=min,
+           p1=p1, p99=p99,p2_=p2,p98_=p98, max=max,UC=UC, LC=LC))
+}
+findoutliers(df$Salary)
+df$Salary[df$Salary<(12000)]=12000
+df$Salary[df$Salary>(200000)]=200000
+
+
+
+colsuse=c("Salary", "GenderSelect"	,"Country","Age"	,"EmploymentStatus"	,
+          "CurrentJobTitleSelect"	,"CurrentEmployerType","LanguageRecommendationSelect"	
+          ,"LearningPlatformSelect"	,"FormalEducation","MajorSelect","Tenure","MLSkillsSelect"
+          ,"MLToolNextYearSelect",
+          
+          "MLMethodNextYearSelect",
+          "WorkAlgorithmsSelect",
+          "WorkToolsSelect",
+          "WorkMethodsSelect",
+          "AlgorithmUnderstandingLevel")
+
+library(ggplot2)
+```
+
+```{r}
+df=df %>% select(colsuse)
+#Transformations-----------
+df$EmploymentStatus=as.factor(df$EmploymentStatus)
+library(stringr)
+
+
+df$Skills=str_count(df$MLSkillsSelect, ',')+1
+df$LPs_count=str_count(df$LearningPlatformSelect, ',')+1
+
+##Gender-----
+table(df$GenderSelect)
+df1=df%>% select("GenderSelect")
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = df1)
+df1<- data.frame(predict(dmy, newdata = df1))
+print(df1)
+
+df=data.frame(df,df1)
+names(df)
+
+#Formal Education----
+levels(as.factor(df$FormalEducation))
+df$FormalEducation[df$FormalEducation=="I did not complete any formal education past high school"]=0
+df$FormalEducation[df$FormalEducation=="Some college/university study without earning a bachelor's degree"]=1
+df$FormalEducation[df$FormalEducation=="Bachelor's degree"]=2
+df$FormalEducation[df$FormalEducation=="Professional degree"]=3
+df$FormalEducation[df$FormalEducation=="Master's degree"]=4
+df$FormalEducation[df$FormalEducation=="Doctoral degree"]=5
+df$FormalEducation[df$FormalEducation=="I prefer not to answer"]=-1
+
+df$FormalEducation=as.numeric(df$FormalEducation)
+summary(data.frame(df$FormalEducation))
+
+#EmploymentStatus----
+
+df1=df%>% select("EmploymentStatus")
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = df1)
+df1<- data.frame(predict(dmy, newdata = df1))
+print(df1)
+
+df=data.frame(df,df1)
+names(df)
+
+#Tenure----
+df1=df%>% select("Tenure")
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = df1)
+df1<- data.frame(predict(dmy, newdata = df1))
+print(df1)
+
+df=data.frame(df,df1)
+names(df)
+
+levels(as.factor(df$Tenure))
+df$Tenure[df$Tenure=="Less than a year"]=0
+df$Tenure[df$Tenure=="1 to 2 years"]=1
+df$Tenure[df$Tenure=="3 to 5 years"]=2
+df$Tenure[df$Tenure=="6 to 10 years"]=3
+df$Tenure[df$Tenure=="More than 10 years"]=4
+df$Tenure[df$Tenure=="I don't write code to analyze data"]=-1
+
+
+df$Tenure=as.numeric(df$Tenure)
+summary(data.frame(df$Tenure))
+
+#CurrentJobTitleSelect----
+df1=df%>% select("CurrentJobTitleSelect")
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = df1)
+df1<- data.frame(predict(dmy, newdata = df1))
+print(df1)
+
+df=data.frame(df,df1)
+names(df)
+
+#MajorSelect----
+df1=df%>% select("MajorSelect")
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = df1)
+df1<- data.frame(predict(dmy, newdata = df1))
+print(df1)
+
+df=data.frame(df,df1)
+names(df)
+#"WorkAlgorithmsSelect",----------
+#"WorkToolsSelect",-------
+#"WorkMethodsSelect"-----
+levels(as.factor(df$WorkMethodsSelect))
+df$WorkMethods=str_count(df$WorkMethodsSelect, ',')+1
+
+
+#"AlgorithmUnderstandingLevel")-------
+levels(as.factor(df$AlgorithmUnderstandingLevel))
+summary(data.frame(df$AlgorithmUnderstandingLevel))
+df$AlgorithmUnderstandingLevel=as.character(df$AlgorithmUnderstandingLevel)
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to run the code / standard library"]=1
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to tune the parameters properly"]=2
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to explain the algorithm to someone non-technical "]=4
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to refine and innovate on the algorithm"]=6
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to code it again from scratch, albeit it may run slowly"]=3
+df$AlgorithmUnderstandingLevel[df$AlgorithmUnderstandingLevel=="Enough to code it from scratch and it will run blazingly fast and be super efficient"]=5
+
+
+df$AlgorithmUnderstandingLevel=as.numeric(df$AlgorithmUnderstandingLevel)
+summary(data.frame(df$AlgorithmUnderstandingLevel))
+```
+
+```{r}
+
+####  PLOTS---------
+ggplot(df,aes(Salary))+geom_histogram()+stat_bin(bins=10)
+ggplot(data = df, mapping = aes(x = Tenure , y = Salary)) +
+  geom_point(size=3, shape=20)
+
+ggplot(data = df, mapping = aes(x = Age , y = Salary)) +
+  geom_point(size=3, shape=20)
+ggplot(data = df, mapping = aes(x = WorkMethods , y = Salary)) +
+  geom_point(size=3, shape=20)
+
+ggplot(data = df, mapping = aes(x = AlgorithmUnderstandingLevel , y = Salary)) +
+  geom_point(size=3, shape=20)
+library(stats)
+## Regression---------
+# m1<-lm(Salary~.
+#        , data=df)       
+# summary(m1)  
+# m1
+```
+
