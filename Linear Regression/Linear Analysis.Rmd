@@ -91,3 +91,18 @@ df=useful_df[!is.na(useful_df$CompensationAmount),]
 df = subset(df, select = -c(WorkMethodsFrequencySelect1,WorkMethodsFrequencySelect2,WorkMethodsFrequencySelect3,WorkToolsFrequencyMathematica) )
 df = subset(df, select = -c(WorkMethodsFrequencyLiftAnalysis,WorkMethodsFrequencyHMMs,WorkMethodsFrequencyGANs) )
 summary(df)
+
+```
+
+
+```{r}
+write.csv(useful_df,"kaggleSalData.csv")
+sum(!is.na(useful_df$CompensationAmount))
+#install.packages("naniar")
+library(naniar)   
+useful_df <- useful_df %>% dplyr::na_if("")
+df=useful_df[!is.na(useful_df$CompensationAmount),]
+df = subset(df, select = -c(WorkMethodsFrequencySelect1,WorkMethodsFrequencySelect2,WorkMethodsFrequencySelect3,WorkToolsFrequencyMathematica) )
+df = subset(df, select = -c(WorkMethodsFrequencyLiftAnalysis,WorkMethodsFrequencyHMMs,WorkMethodsFrequencyGANs) )
+summary(df)
+```
